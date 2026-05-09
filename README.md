@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nelios Web Developer Assessment
 
-## Getting Started
+Headless WordPress + Next.js App Router implementation.
 
-First, run the development server:
+The project runs a WordPress backend with a custom plugin for post items, exposes those items through a custom REST API, and renders the listing/filter UI in a Next.js frontend.
+
+## Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Frontend: http://localhost:3000
+- WordPress: http://localhost:8080
+- WordPress admin: http://localhost:8080/wp-admin
+- phpMyAdmin: http://localhost:8081
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+WordPress admin credentials:
 
-## Learn More
+```txt
+username: admin
+password: admin
+```
 
-To learn more about Next.js, take a look at the following resources:
+The `wp-init` container is a one-time setup container. It should exit with code `0` after WordPress is installed, the custom plugin is activated, and seed data is created.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stop
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+docker compose down
+```
 
-## Deploy on Vercel
+## Reset
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This removes the WordPress and MySQL volumes, then rebuilds from scratch on the next start.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose down -v --remove-orphans
+docker compose up --build
+```
+
+## Environment
+
+The frontend fetches package data from WordPress using `WORDPRESS_API_URL`.
+
+In Docker Compose this is set automatically:
+
+```txt
+WORDPRESS_API_URL=http://wordpress/wp-json/nelios/v1
+```
+
+For local non-Docker frontend development, the app falls back to:
+
+```txt
+http://localhost:8080/wp-json/nelios/v1
+```
+
+Example env values are documented in `.env.example`.
+
+You do not need to copy `.env.example` to `.env` for the default Docker setup.
+Docker Compose already provides the correct internal WordPress URL. Create a
+local `.env` file only if you want to override `WORDPRESS_API_URL`.
+
+## REST API
+
+Package listing endpoint:
+
+```txt
+GET http://localhost:8080/wp-json/nelios/v1/items
+```
+
+Single package endpoint:
+
+```txt
+GET http://localhost:8080/wp-json/nelios/v1/items/{id}
+```
+
+Supported filters:
+
+```txt
+hotel_stars=3-stars|4-stars|5-stars
+travel_style=by-car|other
+min_price=number
+max_price=number
+```
+
+Example:
+
+```txt
+http://localhost:8080/wp-json/nelios/v1/items?hotel_stars=4-stars
+```
+
+## Project Structure
+
+```txt
+app/                         Next.js App Router files
+components/packages/          Package listing UI components
+hooks/                        Client-side filter URL state
+lib/                          API, types, formatting, query parsing
+public/images/packages/       Package images used by the frontend
+wordpress/wp-content/plugins/
+  nelios-items/               Custom WordPress plugin
+```
