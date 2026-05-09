@@ -1,0 +1,42 @@
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: nelios-wordpress
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: mysql
+      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_PASSWORD: admin
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress/wp-content:/var/www/html/wp-content
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_DATABASE: mysql
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: nelios-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+
+volumes:
+  wordpress_data:
+  db_data:

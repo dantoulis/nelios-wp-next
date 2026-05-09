@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# WordPress generated files
+wordpress/wp-content/uploads/
+wordpress/wp-content/upgrade/
+wordpress/wp-content/languages/
+
+# Ignore default WordPress plugins/themes
+wordpress/wp-content/plugins/akismet/
+wordpress/wp-content/plugins/hello.php
+wordpress/wp-content/themes/twentytwentyfive/
+wordpress/wp-content/themes/twentytwentyfour/
+wordpress/wp-content/themes/twentytwentythree/
