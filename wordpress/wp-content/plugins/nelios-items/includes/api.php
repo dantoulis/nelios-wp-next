@@ -19,19 +19,93 @@ function nelios_register_items_endpoint()
   ]);
 }
 
-function nelios_get_items()
+function nelios_get_items(WP_REST_Request $request)
 {
-  $query = new WP_Query([
+  $args = [
     'post_type' => 'nelios_item',
     'post_status' => 'publish',
     'posts_per_page' => -1,
-  ]);
+  ];
+
+  $tax_query = [];
+  $hotel_stars = nelios_normalize_hotel_stars_filter((string) $request->get_param('hotel_stars'));
+  $travel_style = sanitize_title((string) $request->get_param('travel_style'));
+
+  if ($hotel_stars !== '') {
+    $tax_query[] = [
+      'taxonomy' => 'hotel_stars',
+      'field' => 'slug',
+      'terms' => $hotel_stars,
+    ];
+  }
+
+  if ($travel_style !== '') {
+    $tax_query[] = [
+      'taxonomy' => 'travel_style',
+      'field' => 'slug',
+      'terms' => $travel_style,
+    ];
+  }
+
+  if (!empty($tax_query)) {
+    $args['tax_query'] = array_merge(['relation' => 'AND'], $tax_query);
+  }
+
+  $meta_query = [];
+
+  if ($request->get_param('min_price') !== null) {
+    $meta_query[] = [
+      'key' => 'price',
+      'value' => (float) $request->get_param('min_price'),
+      'compare' => '>=',
+      'type' => 'NUMERIC',
+    ];
+  }
+
+  if ($request->get_param('max_price') !== null) {
+    $meta_query[] = [
+      'key' => 'price',
+      'value' => (float) $request->get_param('max_price'),
+      'compare' => '<=',
+      'type' => 'NUMERIC',
+    ];
+  }
+
+  if (!empty($meta_query)) {
+    $args['meta_query'] = array_merge(['relation' => 'AND'], $meta_query);
+  }
+
+  $query = new WP_Query($args);
 
   $items = array_map('nelios_format_item', $query->posts);
+  $price_bounds = nelios_get_price_bounds();
+  $selected_min_price = $request->get_param('min_price') !== null
+    ? (float) $request->get_param('min_price')
+    : $price_bounds['min'];
+  $selected_max_price = $request->get_param('max_price') !== null
+    ? (float) $request->get_param('max_price')
+    : $price_bounds['max'];
 
   return rest_ensure_response([
     'items' => $items,
     'total' => count($items),
+    'availableFilters' => [
+      'hotelStars' => nelios_format_terms('hotel_stars'),
+      'travelStyles' => nelios_format_terms('travel_style'),
+      'price' => [
+        'min' => $price_bounds['min'],
+        'max' => $price_bounds['max'],
+        'selectedMin' => $selected_min_price,
+        'selectedMax' => $selected_max_price,
+        'currency' => 'EUR',
+        'step' => 1,
+        'ranges' => [
+          ['slug' => 'up-to-50', 'label' => 'Έως 50 €', 'min' => 0, 'max' => 50],
+          ['slug' => '50-150', 'label' => '50 - 150 €', 'min' => 50, 'max' => 150],
+          ['slug' => '150-500', 'label' => '150 - 500 €', 'min' => 150, 'max' => 500],
+        ],
+      ],
+    ],
   ]);
 }
 
@@ -75,5 +149,79 @@ function nelios_format_item(WP_Post $post)
       'url' => '/images/packages/' . $image_filename,
       'alt' => $title,
     ],
+    'filters' => [
+      'hotelStars' => nelios_format_post_terms($post->ID, 'hotel_stars'),
+      'travelStyle' => nelios_format_post_terms($post->ID, 'travel_style'),
+    ],
   ];
+}
+
+function nelios_format_terms($taxonomy)
+{
+  $terms = get_terms([
+    'taxonomy' => $taxonomy,
+    'hide_empty' => false,
+  ]);
+
+  if (empty($terms) || is_wp_error($terms)) {
+    return [];
+  }
+
+  return array_map(function ($term) {
+    return [
+      'id' => $term->term_id,
+      'slug' => $term->slug,
+      'name' => $term->name,
+      'count' => $term->count,
+    ];
+  }, array_values($terms));
+}
+
+function nelios_get_price_bounds()
+{
+  $post_ids = get_posts([
+    'post_type' => 'nelios_item',
+    'post_status' => 'publish',
+    'posts_per_page' => -1,
+    'fields' => 'ids',
+  ]);
+
+  $prices = [];
+
+  foreach ($post_ids as $post_id) {
+    $price = get_post_meta($post_id, 'price', true);
+
+    if ($price !== '' && is_numeric($price)) {
+      $prices[] = (float) $price;
+    }
+  }
+
+  if (empty($prices)) {
+    return [
+      'min' => 0,
+      'max' => 0,
+    ];
+  }
+
+  return [
+    'min' => min($prices),
+    'max' => max($prices),
+  ];
+}
+
+function nelios_format_post_terms($post_id, $taxonomy)
+{
+  $terms = get_the_terms($post_id, $taxonomy);
+
+  if (empty($terms) || is_wp_error($terms)) {
+    return [];
+  }
+
+  return array_map(function ($term) {
+    return [
+      'id' => $term->term_id,
+      'slug' => $term->slug,
+      'name' => $term->name,
+    ];
+  }, array_values($terms));
 }
