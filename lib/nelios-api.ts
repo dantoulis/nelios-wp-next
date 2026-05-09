@@ -1,11 +1,10 @@
 import type { PackageQuery, PackagesResponse } from "@/lib/nelios-types";
 
-const defaultApiBase =
-  process.env.WORDPRESS_API_URL ??
-  process.env.NEXT_PUBLIC_WORDPRESS_API_URL ??
-  "http://localhost:8080/wp-json/nelios/v1";
+const localWordPressApi = "http://localhost:8080/wp-json/nelios/v1";
 
-const apiBase = defaultApiBase.replace(/\/$/, "");
+function getApiBase() {
+  return (process.env.WORDPRESS_API_URL ?? localWordPressApi).replace(/\/$/, "");
+}
 
 export const emptyPackagesResponse: PackagesResponse = {
   availableFilters: {
@@ -37,7 +36,7 @@ export const emptyPackagesResponse: PackagesResponse = {
 };
 
 function buildItemsUrl(query: PackageQuery) {
-  const url = new URL(`${apiBase}/items`);
+  const url = new URL(`${getApiBase()}/items`);
 
   if (query.hotelStars) {
     url.searchParams.set("hotel_stars", query.hotelStars);
@@ -70,5 +69,7 @@ export async function getPackages(query: PackageQuery) {
     throw new Error(`Nelios API request failed with ${response.status}`);
   }
 
-  return (await response.json()) as PackagesResponse;
+  const data = await response.json();
+
+  return data as PackagesResponse;
 }

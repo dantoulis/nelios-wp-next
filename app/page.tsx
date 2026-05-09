@@ -14,7 +14,8 @@ type HomeProps = {
 };
 
 export default async function Home({ searchParams }: HomeProps) {
-  const query = parsePackageSearchParams(await searchParams);
+  const rawSearchParams = await searchParams;
+  const query = parsePackageSearchParams(rawSearchParams);
   const pageKey = [
     query.hotelStars ?? "",
     query.maxPrice ?? "",

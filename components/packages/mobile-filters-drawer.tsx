@@ -26,7 +26,7 @@ export function MobileFiltersDrawer({
   return (
     <div
       aria-hidden={!isOpen}
-      className={`fixed inset-0 z-50 md:hidden ${
+      className={`fixed inset-0 z-50 lg:hidden ${
         isOpen ? "pointer-events-auto" : "pointer-events-none"
       }`}
       id="mobile-filters"

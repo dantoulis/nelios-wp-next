@@ -57,13 +57,13 @@ export function FiltersPanel({
           activeValue={draft.hotelStars}
           onChange={(hotelStars) => onChange({ hotelStars })}
           options={filters.hotelStars}
-          title="Hotel stars"
+          title="Αστέρια Ξενοδοχείου"
         />
         <FilterCheckboxGroup
           activeValue={draft.travelStyle}
           onChange={(travelStyle) => onChange({ travelStyle })}
           options={filters.travelStyles}
-          title="Travel style"
+          title="Τρόπος Ταξιδιού"
         />
       </div>
 

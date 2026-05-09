@@ -54,14 +54,14 @@ export function PackageResults({
             </p>
           ) : null}
         </div>
-        <div className="hidden justify-self-end md:block">
+        <div className="hidden justify-self-end lg:block">
           <SortSelect
             className="w-[170px]"
             onChange={onSortChange}
             value={query.sort}
           />
         </div>
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-3 lg:hidden">
           <button
             aria-controls="mobile-filters"
             aria-expanded={isFiltersOpen}
