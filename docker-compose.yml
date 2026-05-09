@@ -37,6 +37,68 @@ services:
     depends_on:
       - db
 
+  wp-init:
+    image: wordpress:cli
+    container_name: nelios-wp-init
+    user: "33:33"
+    depends_on:
+      - wordpress
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: mysql
+      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_PASSWORD: admin
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress/wp-content:/var/www/html/wp-content
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cd /var/www/html
+
+        until [ -f wp-config.php ]; do
+          echo "Waiting for WordPress files..."
+          sleep 3
+        done
+
+        until php -r 'exit(mysqli_connect("db", getenv("WORDPRESS_DB_USER"), getenv("WORDPRESS_DB_PASSWORD"), getenv("WORDPRESS_DB_NAME"), 3306) ? 0 : 1);'; do
+          echo "Waiting for database..."
+          sleep 3
+        done
+
+        mkdir -p wp-content/uploads
+        chmod -R 777 wp-content/uploads || true
+        cat > .htaccess <<'HTACCESS'
+        # BEGIN WordPress
+
+        RewriteEngine On
+        RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+        RewriteBase /
+        RewriteRule ^index\.php$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.php [L]
+
+        # END WordPress
+        HTACCESS
+
+        if ! wp core is-installed --allow-root; then
+          wp core install \
+            --allow-root \
+            --url="http://localhost:8080" \
+            --title="Nelios Assessment" \
+            --admin_user="admin" \
+            --admin_password="admin" \
+            --admin_email="admin@example.com" \
+            --skip-email
+        fi
+
+        wp rewrite structure '/%postname%/' --allow-root
+        wp plugin activate nelios-items --allow-root
+        wp rewrite flush --allow-root
+
 volumes:
   wordpress_data:
   db_data:
