@@ -136,3 +136,36 @@ body {
   color: var(--brand-black);
   font-family: var(--font-primary), Arial, Helvetica, sans-serif;
 }
+
+.price-range-thumb {
+  pointer-events: none;
+}
+
+.price-range-thumb::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.price-range-thumb::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--accent-blue);
+  border: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  height: 16px;
+  pointer-events: auto;
+  width: 16px;
+}
+
+.price-range-thumb::-moz-range-track {
+  background: transparent;
+}
+
+.price-range-thumb::-moz-range-thumb {
+  background: var(--accent-blue);
+  border: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  height: 16px;
+  pointer-events: auto;
+  width: 16px;
+}
