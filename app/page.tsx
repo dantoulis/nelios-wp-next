@@ -1,9 +1,42 @@
-export default function Home() {
+import { PackagesPageShell } from "@/components/packages/packages-page-shell";
+import {
+  emptyPackagesResponse,
+  getPackages,
+} from "@/lib/nelios-api";
+import {
+  parsePackageSearchParams,
+  sortPackageItems,
+} from "@/lib/package-query";
+import type { SearchParamsRecord } from "@/lib/nelios-types";
+
+type HomeProps = {
+  searchParams: Promise<SearchParamsRecord>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const query = parsePackageSearchParams(await searchParams);
+  const pageKey = [
+    query.hotelStars ?? "",
+    query.maxPrice ?? "",
+    query.minPrice ?? "",
+    query.sort,
+    query.travelStyle ?? "",
+  ].join(":");
+  let data = emptyPackagesResponse;
+  let fetchError = false;
+
+  try {
+    data = await getPackages(query);
+  } catch {
+    fetchError = true;
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center">
-      <main className="flex flex-1 w-full flex-col items-center justify-between">
-        <span>hello</span>
-      </main>
-    </div>
+    <PackagesPageShell
+      data={{ ...data, items: sortPackageItems(data.items, query.sort) }}
+      fetchError={fetchError}
+      key={pageKey}
+      query={query}
+    />
   );
 }
